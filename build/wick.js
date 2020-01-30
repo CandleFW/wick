@@ -1228,11 +1228,11 @@ var wick = (function () {
         search: ""
     };
 
-    function fetchLocalText(URL, m = "same-origin") {
+    function fetchLocalText(URL, m = "cors") {
         return new Promise((res, rej) => {
             fetch(URL, {
                 mode: m, // CORs not allowed
-                credentials: m,
+                credentials: "include",
                 method: "GET"
             }).then(r => {
 
@@ -1244,11 +1244,11 @@ var wick = (function () {
         });
     }
 
-    function fetchLocalJSON(URL, m = "same-origin") {
+    function fetchLocalJSON(URL, m = "cors") {
         return new Promise((res, rej) => {
             fetch(URL, {
                 mode: m, // CORs not allowed
-                credentials: m,
+                credentials: "omit",
                 method: "GET"
             }).then(r => {
                 if (r.status < 200 || r.status > 299)
@@ -23376,6 +23376,9 @@ var wick = (function () {
             this.ios.push(io);
 
             io.parent = this;
+
+            if(this.value !== undefined)
+                io.down(this.value);
         }
 
         removeIO(io) {
@@ -23546,8 +23549,8 @@ var wick = (function () {
         }
 
         addContainer(container) {
-            container.parent = this;    
-           this.PENDING_LOADS++;
+            container.parent = this;
+            this.PENDING_LOADS++;
             this.containers.push(container);
         }
 
@@ -23569,8 +23572,9 @@ var wick = (function () {
                     return (this.scopes.splice(i, 1), scope.parent = null);
         }
 
-        linkImportTaps(parent_scope) {
+        linkImportTaps(parent_scope = this.parent) {
             for (const tap of this.taps.values()) {
+                
                 tap.linkImport(parent_scope);
             }
         }
@@ -23600,6 +23604,9 @@ var wick = (function () {
         load(model) {
             //Called before model is loaded
             this.update({ loading: true }); //Lifecycle Events: Loading <====================================================================== 
+
+            if(this.parent)
+                this.linkImportTaps();
 
             let
                 m = null,
@@ -23665,7 +23672,7 @@ var wick = (function () {
                 this.LOADED = true;
 
                 this.update({ loaded: true }); //Lifecycle Events: Loaded <======================================================================
-                
+
                 if (this.parent && this.parent.loadAcknowledged)
                     this.parent.loadAcknowledged();
             }
@@ -24107,7 +24114,7 @@ in file ${o.url || o.origin_url}`,e);
             */
             if (this.pending_load_attrib && this.getAttrib(this.pending_load_attrib).value) {
                 const fn = e => {
-                    scope.acknowledgePending();
+                    scope.loadAcknowledged();
                     own_element.removeEventListener("load", fn);
                 };
                 own_element.addEventListener("load", fn);
@@ -26124,11 +26131,11 @@ in file ${o.url || o.origin_url}`,e);
                 transition = Animation.createTransition(), OWN_TRANSITION = true;
 
             for (let i = 0; i < items.length; i++) {
-                const scope = this.component.mount(null, items[i]);
+                const scope = this.component.mount(null, items[i], undefined, this.parent);
 
                 //TODO: Make sure both of there references are removed when the scope is destroyed.
                 this.scopes.push(scope);
-                this.parent.addScope(scope);
+                //this.parent.addScope(scope);
 
                 scope.update({ loaded: true });
             }
@@ -26170,19 +26177,19 @@ in file ${o.url || o.origin_url}`,e);
         }
 
         //Mounts component data to new HTMLElement object.
-        async mount(HTMLElement_, data_object, USE_SHADOW) {
+        async mount(HTMLElement_, data_object, USE_SHADOW, parent_scope) {
 
             if (this.READY !== true) {
                 if (!this.__pending)
                     this.__pending = [];
 
-                return new Promise(res => this.__pending.push([false, HTMLElement_, data_object, USE_SHADOW, res]));
+                return new Promise(res => this.__pending.push([false, HTMLElement_, data_object, USE_SHADOW, parent_scope,  res]));
             }
 
-            return this.nonAsyncMount(HTMLElement_, data_object, USE_SHADOW);
+            return this.nonAsyncMount(HTMLElement_, data_object, USE_SHADOW, parent_scope);
         }
 
-        nonAsyncMount(HTMLElement_, data_object = null, USE_SHADOW) {
+        nonAsyncMount(HTMLElement_, data_object = null, USE_SHADOW, parent_scope = null) {
             let element = HTMLElement_;
 
             if (USE_SHADOW == undefined)
@@ -26194,7 +26201,7 @@ in file ${o.url || o.origin_url}`,e);
                 element = HTMLElement_.attachShadow({ mode: 'open' });
             }
 
-            const scope = this.ast.mount(element);
+            const scope = this.ast.mount(element, parent_scope);
 
             scope.load(data_object);
 
@@ -26313,7 +26320,7 @@ in file ${o.url || o.origin_url}`,e);
         setValue(value) {
             if (Array.isArray(value)) {
                 value.forEach((v, i) => this.arg_props[i] = v);
-                this.active_IOS = this.IO_ACTIVATIONS;
+                this.ACTIVE_IOS = this.IO_ACTIVATIONS;
             } else if (typeof(value) == "object") {
                 //Distribute iterable properties amongst the IO_Script's own props.
                 for (const a in value) {
@@ -26816,7 +26823,7 @@ in file ${o.url || o.origin_url}`,e);
 
                 else
 
-                if (this.name == "value" && (tag == "input" || tag == "textarea"))
+                if (this.name == "value" && (tag == "select" || tag == "input" || tag == "textarea"))
                     this.io_constr = InputIO;
             }
 
@@ -27314,7 +27321,7 @@ in file ${o.url || o.origin_url}`,e);
                         this.READY = true;
 
                         if (this.__pending) {
-                            this.__pending.forEach(e => e[0] ? e[3](this.stamp(...e.slice(1, 3))) : e[4](this.mount(...e.slice(1, 4))));
+                            this.__pending.forEach(e => e[0] ? e[4](this.stamp(...e.slice(1, 4))) : e[5](this.mount(...e.slice(1, 5))));
                             this.__pending = null;
                         }
 

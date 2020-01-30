@@ -1,0 +1,67 @@
+## HYDROCARBON BASE GLOW ##
+
+@NAME CandleFW Glow Script
+
+@EXT glow  
+
+@IGNORE θws θnl 
+
+@IMPORT ../../../node_modules/@candlefw/css/source/grammar/css.hcg as css 
+
+##############################################################################################
+##############################################################################################
+#### GLOW
+##############################################################################################
+##############################################################################################
+
+	<> GLOW → animation_scripts
+
+	<> animation_scripts → animation_script(*)
+
+	<> animation_script → target sequences
+
+	<> target → θid
+
+	<> sequences → sequence(*)
+
+	<> sequence → timeline frames?
+
+	<> timeline →  | key(*:) |
+
+	<> key → number? number? easing? 
+
+	<> easing → θid
+
+	<> frames → frame(+)
+
+	<> frame →  int : prop(+|)
+
+	<> prop → transform_prop 
+		│ css::declaration
+
+	<> transform_prop → (τtranslate │ τtr ) \( pos , pos  \)
+		#│ (τtranslate3D │ τt3D ) \( pos , pos \)
+		│ (τtranslateX │ τtX ) \( pos \)
+		│ (τtranslateY │ τtY ) \( pos \)
+		│ (τtranslateZ │ τtZ ) \( pos \)
+		│ (τscale │ τs ) \( float \)
+		│ (τscale │ τs ) \( float \)
+		│ (τskew │ τsc ) \( rot \)
+		│ (τskewX │ τscX ) \( pos (, pos)?  \)
+		│ (τskewY │ τscY ) \( pos (, pos)?  \)
+		│ (τrotate │ τr ) \( rot \)
+		│ (τrotatex │ τrx ) \( rot \)
+		│ (τrotatey │ τry ) \( rot \)
+		│ (τrotatez │ τrz ) \( rot \)
+		│ (τperspective │ τp ) \( float \)
+		│ (τmatrix │ τm ) \( float , float , float , float, float, float \)
+
+	<> int → θnum
+
+	<> number → θnum │ float
+
+	<> float → θnum . θnum? (τe (\+ │ \-)? θnum)?
+
+	<> rot → θnum (θdeg | θrad)
+
+	<> pos → θnum (\% | θpx │ θpt)
