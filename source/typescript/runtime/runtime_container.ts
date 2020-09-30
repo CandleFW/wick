@@ -646,7 +646,7 @@ export class WickContainer implements Sparky, ObservableWatcher {
     }
 
     restoreContainerElement() {
-        if (this.REPLACE_ELEMENT) {
+        if (this.REPLACE_ELEMENT && this.ELEMENT_CONNECTED) {
             this.ELEMENT_CONNECTED = false;
             this.activeComps[0].ele.replaceWith(this.ele);
         }
